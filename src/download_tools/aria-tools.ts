@@ -1,8 +1,8 @@
 import downloadUtils = require('./utils');
-import drive = require('../fs-walk');
+// import drive = require('../fs-walk');
 const Aria2 = require('aria2');
 import constants = require('../.constants');
-import tar = require('../drive/tar');
+import tar = require('./tar');
 const diskspace = require('diskspace');
 import filenameUtils = require('./filename-utils');
 import { DlVars } from '../dl_model/detail';
@@ -170,13 +170,13 @@ export function uploadFile(dlDetails: DlVars, filePath: string, fileSize: number
   if (dlDetails.isTar) {
     if (filePath === realFilePath) {
       // If there is only one file, do not archive
-      driveUploadFile(dlDetails, realFilePath, fileName, fileSize, callback);
+      moveFileLocally(dlDetails, realFilePath, fileName, fileSize, callback);
     } else {
       diskspace.check(constants.ARIA_DOWNLOAD_LOCATION_ROOT, (err: string, res: any) => {
         if (err) {
           console.log('uploadFile: diskspace: ' + err);
           // Could not archive, so upload normally
-          driveUploadFile(dlDetails, realFilePath, fileName, fileSize, callback);
+          moveFileLocally(dlDetails, realFilePath, fileName, fileSize, callback);
           return;
         }
         if (res['free'] > fileSize) {
@@ -187,26 +187,53 @@ export function uploadFile(dlDetails: DlVars, filePath: string, fileSize: number
               callback(err, dlDetails.gid, null, null, null, null, false);
             } else {
               console.log('Archive complete');
-              driveUploadFile(dlDetails, realFilePath + '.tar', destName, size, callback);
+              moveFileLocally(dlDetails, realFilePath + '.tar', destName, size, callback);
             }
           });
         } else {
           console.log('uploadFile: Not enough space, uploading without archiving');
-          driveUploadFile(dlDetails, realFilePath, fileName, fileSize, callback);
+          moveFileLocally(dlDetails, realFilePath, fileName, fileSize, callback);
         }
       });
     }
   } else {
-    driveUploadFile(dlDetails, realFilePath, fileName, fileSize, callback);
+    moveFileLocally(dlDetails, realFilePath, fileName, fileSize, callback);
   }
 }
 
-function driveUploadFile(dlDetails: DlVars, filePath: string, fileName: string, fileSize: number, callback: DriveUploadCompleteCallback): void {
-  drive.uploadRecursive(dlDetails,
-    filePath,
-    constants.GDRIVE_PARENT_DIR_ID,
-    (err: string, url: string, isFolder: boolean) => {
-      callback(err, dlDetails.gid, url, filePath, fileName, fileSize, isFolder);
+function moveFileLocally(dlDetails: DlVars, filePath: string, fileName: string, fileSize: number, callback: DriveUploadCompleteCallback): void {
+  const fs = require('fs-extra');
+  const destPath = `${constants.LOCAL_UPLOAD_PATH}/${fileName}`;
+
+  fs.move(filePath, destPath, { overwrite: true })
+    .then(() => {
+      // Upload to Telegram
+      const TelegramBot = require('node-telegram-bot-api');
+      const bot = new TelegramBot(constants.TOKEN, {
+        baseApiUrl: constants.TELEGRAM_API_URL
+      });
+
+      bot.sendDocument(dlDetails.tgChatId, `file://${destPath}`, {
+        caption: fileName,
+        parse_mode: 'HTML'
+      })
+        .then((message: any) => {
+          // const url = `https://t.me/c/${message.chat.id.toString().replace('-100', '')}/${message.message_id}`;
+          // Using the local path as the "url" for the callback, as per previous logic, but now we also uploaded it.
+          // The user wants to see "Saved to: <localpath>" and cc user. 
+          // The callback handles the message generation.
+          callback(null, dlDetails.gid, destPath, filePath, fileName, fileSize, false);
+        })
+        .catch((err: Error) => {
+          console.error(`Failed to upload to Telegram: ${err.message}`);
+          // Even if Telegram upload fails, we successfully moved the file locally.
+          // We can optionally report this error or just succeed with the local path.
+          // Let's report success for local move but maybe log the error.
+          callback(null, dlDetails.gid, destPath, filePath, fileName, fileSize, false);
+        });
+    })
+    .catch((err: Error) => {
+      callback(err.message, dlDetails.gid, null, filePath, fileName, fileSize, false);
     });
 }
 

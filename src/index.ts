@@ -5,15 +5,18 @@ import ariaTools = require('./download_tools/aria-tools.js');
 import constants = require('./.constants.js');
 import msgTools = require('./bot_utils/msg-tools.js');
 import dlm = require('./dl_model/dl-manager');
-import driveList = require('./drive/drive-list.js');
-import driveUtils = require('./drive/drive-utils.js');
+// import driveList = require('./drive/drive-list.js');
+// import driveUtils = require('./drive/drive-utils.js');
 import details = require('./dl_model/detail');
 import filenameUtils = require('./download_tools/filename-utils');
 import { EventRegex } from './bot_utils/event_regex';
 import { exec } from 'child_process';
 
 const eventRegex = new EventRegex();
-const bot = new TelegramBot(constants.TOKEN, { polling: true });
+const bot = new TelegramBot(constants.TOKEN, {
+  polling: true,
+  baseApiUrl: constants.TELEGRAM_API_URL
+});
 var websocketOpened = false;
 var statusInterval: NodeJS.Timeout;
 var dlManager = dlm.DlManager.getInstance();
@@ -96,6 +99,7 @@ setEventCallback(eventRegex.commandsRegex.mirrorStatus, eventRegex.commandsRegex
   }
 });
 
+/*
 setEventCallback(eventRegex.commandsRegex.list, eventRegex.commandsRegexNoName.list, (msg, match) => {
   if (msgTools.isAuthorized(msg) < 0) {
     msgTools.sendUnauthorizedMessage(bot, msg);
@@ -119,6 +123,7 @@ setEventCallback(eventRegex.commandsRegex.getFolder, eventRegex.commandsRegexNoN
       60000);
   }
 });
+*/
 
 setEventCallback(eventRegex.commandsRegex.cancelMirror, eventRegex.commandsRegexNoName.cancelMirror, (msg) => {
   var authorizedCode = msgTools.isAuthorized(msg);
@@ -570,13 +575,13 @@ function driveUploadCompleteCallback(err: string, gid: string, url: string, file
     console.log(`${gid}: Uploaded `);
     if (fileSize) {
       var fileSizeStr = downloadUtils.formatSize(fileSize);
-      finalMessage = `<a href='${url}'>${fileName}</a> (${fileSizeStr})`;
+      finalMessage = `<b>Local Mirror:</b> <code>${fileName}</code> (${fileSizeStr})\nSaved to: <code>${url}</code>`;
     } else {
-      finalMessage = `<a href='${url}'>${fileName}</a>`;
+      finalMessage = `<b>Local Mirror:</b> <code>${fileName}</code>\nSaved to: <code>${url}</code>`;
     }
-    if (constants.IS_TEAM_DRIVE && isFolder) {
-      finalMessage += '\n\n<i>Folders in Shared Drives can only be shared with members of the drive. Mirror as an archive if you need public links.</i>';
-    }
+    // if (constants.IS_TEAM_DRIVE && isFolder) {
+    //   finalMessage += '\n\n<i>Folders in Shared Drives can only be shared with members of the drive. Mirror as an archive if you need public links.</i>';
+    // }
     cleanupDownload(gid, finalMessage, url);
   }
 }

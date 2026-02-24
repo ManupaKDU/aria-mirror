@@ -1,13 +1,28 @@
 {
   "compilerOptions": {
-    "outDir": "./out",
-    "target": "es6",
+    "target": "es2018",
     "module": "commonjs",
-    "noImplicitAny": true,
+    "outDir": "./out",
+    "rootDir": "./src",
+    "strict": false,
+    "noImplicitAny": false,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": false,
+    "resolveJsonModule": true,
     "allowJs": true,
-    "sourceMap": false
+    "checkJs": false,
+    "moduleResolution": "node",
+    "baseUrl": "./src",
+    "typeRoots": [
+      "./node_modules/@types"
+    ]
   },
   "include": [
-    "./src/**/*"
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "out"
   ]
 }

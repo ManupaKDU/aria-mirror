@@ -4,7 +4,7 @@
   "description": "A telegram bot to mirror files to Google Drive",
   "main": "index.js",
   "scripts": {
-    "start": "npx typescript && NTBA_FIX_319=1 node --max_old_space_size=128 ./out/index.js"
+    "start": "npx tsc && NTBA_FIX_319=1 node --max_old_space_size=128 ./out/index.js"
   },
   "author": "Ritayan Chakraborty",
   "license": "MIT",
@@ -17,16 +17,15 @@
     "aria2": "^3.0.1",
     "diskspace": "^2.0.0",
     "fs-extra": "^7.0.0",
-    "googleapis": "^41.0.1",
-    "http-range-parse": "^1.0.0",
+    "glob": "^13.0.5",
     "node-telegram-bot-api": "^0.30.0",
     "tar": "^4.4.4",
-    "typescript": "^3.5.3",
     "uuid": "^3.3.2"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^1.12.0",
     "@typescript-eslint/parser": "^1.12.0",
-    "eslint": "^6.0.1"
+    "eslint": "^6.0.1",
+    "typescript": "^4.9.5"
   }
 }
